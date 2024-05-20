@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -20,6 +20,7 @@ namespace TypingTutor
         private string selectedLanguage;
         private Dictionary<char, Button> keyButtonMap;
         private Timer keyResetTimer;
+        private bool hasErrorOnCurrentPosition; // Zmienna do śledzenia błędów na bieżącej pozycji
 
         public Form1()
         {
@@ -61,7 +62,6 @@ namespace TypingTutor
                 { 'N', buttonN },
                 { 'M', buttonM },
                 { ' ', Space }
-
             };
 
             sentencesByLanguage = new Dictionary<string, List<string>>
@@ -77,7 +77,7 @@ namespace TypingTutor
                         "Rynek Główny w Krakowie jest jednym z największych średniowiecznych rynków w Europie",
                         "Julia ogląda tureckie seriale razem z Twoją babcią",
                         "Wieczorne niebo pełne jest gwiazd, które migoczą i tworzą piękne wzory",
-                        "Magda to mój ulubiony syn",
+                        "On codziennie biega rano po plaży.",
                         "Na moim podwórku rośnie wielkie drzewo, które daje dużo cienia latem"
                     }
                 },
@@ -120,8 +120,6 @@ namespace TypingTutor
             this.txtInput.TextChanged += new EventHandler(txtInput_TextChanged);
 
             StartNewExercise();
-
-
         }
 
         private void SetupLanguageSelector()
@@ -180,6 +178,7 @@ namespace TypingTutor
             startTime = DateTime.Now; // Rozpocznij pomiar czasu
             lblTime.Text = "Time: 0 s"; // Zresetuj czas
             lblErrors.Text = "Errors: 0"; // Zresetuj błędy
+            hasErrorOnCurrentPosition = false; // Zresetuj flagę błędów
 
             foreach (var button in keyButtonMap.Values)
             {
@@ -204,7 +203,6 @@ namespace TypingTutor
                 keyResetTimer.Start();  // Uruchom Timer, aby zresetować podświetlenie po opóźnieniu
             }
 
-
             if (txtInput.Text == currentSentence)
             {
                 txtInput.Enabled = false;
@@ -215,10 +213,24 @@ namespace TypingTutor
             }
             else
             {
-                if (!currentSentence.StartsWith(txtInput.Text))
+                int currentLength = txtInput.Text.Length;
+
+                // Sprawdź, czy długość wpisanego tekstu nie przekracza długości zdania
+                if (currentLength > 0 && currentLength <= currentSentence.Length)
                 {
-                    errorCount++;
-                    lblErrors.Text = $"Errors: {errorCount}";
+                    if (txtInput.Text[currentLength - 1] != currentSentence[currentLength - 1])
+                    {
+                        if (!hasErrorOnCurrentPosition)
+                        {
+                            errorCount++;
+                            lblErrors.Text = $"Errors: {errorCount}";
+                            hasErrorOnCurrentPosition = true; // Ustaw flagę błędu na bieżącej pozycji
+                        }
+                    }
+                    else
+                    {
+                        hasErrorOnCurrentPosition = false; // Zresetuj flagę błędu, jeśli poprawny znak został wpisany
+                    }
                 }
             }
         }
